@@ -4,7 +4,7 @@ import os
 import hashlib
 from io import BytesIO
 from app import app, db, render_markdown
-from models import Book, Genre, Cover, User, Role
+from models import Book, Genre, Cover, User, Role, Review
 
 class TestElectronicLibrary(unittest.TestCase):
     def setUp(self):
@@ -124,6 +124,48 @@ class TestElectronicLibrary(unittest.TestCase):
         c2_lookup = Cover.query.filter_by(id=c2.id).first()
         self.assertIsNone(c1_lookup)
         self.assertIsNotNone(c2_lookup)
+
+    def test_review_creation_and_cascade_delete(self):
+        b1 = Book(title="Book One", author="Author A", year=2021, publisher="Pub A", pages=100, description="Desc A")
+        db.session.add(b1)
+        db.session.flush()
+        
+        u1 = User(login="test_user", last_name="L", first_name="F", role_id=self.role_user.id)
+        u1.set_password("pass")
+        db.session.add(u1)
+        db.session.flush()
+        
+        r1 = Review(book_id=b1.id, user_id=u1.id, rating=4, text="Test review text")
+        db.session.add(r1)
+        db.session.commit()
+        
+        # Verify review exists
+        self.assertEqual(Review.query.count(), 1)
+        
+        # Delete review
+        db.session.delete(r1)
+        db.session.commit()
+        self.assertEqual(Review.query.count(), 0)
+
+    def test_review_deletion_route_permissions(self):
+        u_mod = User(login="mod_user", last_name="L", first_name="F", role_id=self.role_admin.id)
+        u_mod.set_password("pass")
+        db.session.add(u_mod)
+        
+        b = Book(title="Book", author="Author", year=2021, publisher="Pub", pages=100, description="Desc")
+        db.session.add(b)
+        db.session.flush()
+        
+        r = Review(book_id=b.id, user_id=u_mod.id, rating=4, text="Test text")
+        db.session.add(r)
+        db.session.commit()
+        
+        client = app.test_client()
+        
+        # Try to delete without login (unauthorized redirects)
+        response = client.post(f'/reviews/{r.id}/delete')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Review.query.count(), 1)
 
 if __name__ == '__main__':
     unittest.main()

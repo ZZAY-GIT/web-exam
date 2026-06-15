@@ -112,7 +112,16 @@
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="m-0"><i class="fa-solid fa-user-check me-1 text-primary"></i>Ваша рецензия</h6>
-                            <span class="text-muted small">{{ user_review.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="text-muted small">{{ user_review.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                                {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_moderator) %}
+                                    <form action="{{ url_for('review_delete', review_id=user_review.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить эту рецензию?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Удалить рецензию">
+                                            <i class="fa-solid fa-trash me-1"></i>Удалить
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="mb-3">
                             {% for i in range(1, 6) %}
@@ -139,7 +148,16 @@
                                         <i class="fa-regular fa-user me-1 text-muted"></i>{{ r.user.full_name }}
                                         <span class="badge bg-light text-dark border small ms-1">{{ r.user.role.name }}</span>
                                     </span>
-                                    <span class="text-muted small">{{ r.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="text-muted small">{{ r.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                                        {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_moderator) %}
+                                            <form action="{{ url_for('review_delete', review_id=r.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить эту рецензию?');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Удалить рецензию">
+                                                    <i class="fa-solid fa-trash me-1"></i>Удалить
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     {% for i in range(1, 6) %}

@@ -297,6 +297,21 @@ def book_delete(book_id):
         
     return redirect(url_for('index'))
 
+@app.route('/reviews/<int:review_id>/delete', methods=['POST'])
+@editor_required
+def review_delete(review_id):
+    review = Review.query.get_or_404(review_id)
+    book_id = review.book_id
+    try:
+        db.session.delete(review)
+        db.session.commit()
+        flash("Рецензия успешно удалена.", "success")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting review: {e}")
+        flash("Не удалось удалить рецензию.", "danger")
+    return redirect(url_for('book_show', book_id=book_id))
+
 @app.route('/books/<int:book_id>/reviews/new', methods=['GET', 'POST'])
 @login_required
 def review_add(book_id):
