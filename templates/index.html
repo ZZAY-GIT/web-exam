@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная — Электронная библиотека{% endblock %}
+
+{% block content %}
+<!-- Horizontal Search / Filter Bar (Variant 3) -->
+<div class="glass-card p-4 mb-4">
+    <h5 class="mb-3"><i class="fa-solid fa-magnifying-glass me-2" style="color: var(--accent-primary);"></i>Поиск книги</h5>
+    <form method="GET" action="{{ url_for('index') }}">
+        <div class="row g-3 align-items-end search-bar-row">
+            <!-- Title -->
+            <div class="col-md-2">
+                <label for="search_title" class="form-label small">Название</label>
+                <input type="text" class="form-control" id="search_title" name="title" value="{{ request.args.get('title', '') }}" placeholder="Введите название...">
+            </div>
+
+            <!-- Author -->
+            <div class="col-md-2">
+                <label for="search_author" class="form-label small">Автор</label>
+                <input type="text" class="form-control" id="search_author" name="author" value="{{ request.args.get('author', '') }}" placeholder="Имя автора...">
+            </div>
+
+            <!-- Genres (Dropdown Checkbox List) -->
+            <div class="col-md-2">
+                <label class="form-label small">Жанры</label>
+                <div class="dropdown">
+                    <button class="btn btn-secondary-custom dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" id="genreDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <span>Выбрать жанры</span>
+                    </button>
+                    <ul class="dropdown-menu p-3 w-100" aria-labelledby="genreDropdown" style="max-height: 250px; overflow-y: auto;">
+                        {% for g in genres %}
+                            <li class="form-check mb-1">
+                                <input class="form-check-input border-secondary" type="checkbox" name="genre" value="{{ g.id }}" id="genre_{{ g.id }}" {% if g.id|string in request.args.getlist('genre') %}checked{% endif %}>
+                                <label class="form-check-label text-dark small" for="genre_{{ g.id }}">{{ g.name }}</label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Years (Dropdown Checkbox List) -->
+            <div class="col-md-2">
+                <label class="form-label small">Год издания</label>
+                <div class="dropdown">
+                    <button class="btn btn-secondary-custom dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" id="yearDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <span>Выбрать года</span>
+                    </button>
+                    <ul class="dropdown-menu p-3 w-100" aria-labelledby="yearDropdown" style="max-height: 250px; overflow-y: auto;">
+                        {% for y in years %}
+                            <li class="form-check mb-1">
+                                <input class="form-check-input border-secondary" type="checkbox" name="year" value="{{ y }}" id="year_{{ y }}" {% if y|string in request.args.getlist('year') %}checked{% endif %}>
+                                <label class="form-check-label text-dark small" for="year_{{ y }}">{{ y }}</label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Pages Range -->
+            <div class="col-md-2">
+                <label class="form-label small d-block">Объём (страниц)</label>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" class="form-control" name="pages_min" value="{{ request.args.get('pages_min', '') }}" placeholder="От">
+                    <span class="text-dark">—</span>
+                    <input type="number" class="form-control" name="pages_max" value="{{ request.args.get('pages_max', '') }}" placeholder="До">
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom flex-grow-1">Найти</button>
+                <button type="button" class="btn btn-secondary-custom flex-grow-1" onclick="window.location.href='{{ url_for('index') }}'" title="Сбросить поиск">Сбросить</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Books Catalog Section -->
+<div class="w-100">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="m-0">Каталог книг</h2>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+            <a href="{{ url_for('book_add') }}" class="btn btn-primary-custom btn-sm">
+                <i class="fa-solid fa-plus me-1"></i>Добавить книгу
+            </a>
+        {% endif %}
+    </div>
+
+    {% if pagination.items %}
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for book in pagination.items %}
+                <div class="col">
+                    <div class="glass-card glass-card-hover h-100 d-flex flex-column" style="padding: 0; margin-bottom: 0;">
+                        <!-- Cover Image -->
+                        {% if book.cover %}
+                            <img src="{{ url_for('static', filename='covers/' + book.cover.filename) }}" class="card-img-top book-cover-img" alt="{{ book.title }}">
+                        {% else %}
+                            <div class="bg-light text-dark d-flex flex-column justify-content-center align-items-center book-cover-img" style="height: 240px; border-bottom: 1px solid var(--border-color);">
+                                <i class="fa-solid fa-book fa-3x mb-2 text-muted"></i>
+                                <span>Нет обложки</span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Card Body -->
+                        <div class="book-card-body d-flex flex-column flex-grow-1 px-4 pb-4 pt-3">
+                            <h5 class="card-title mb-1" style="font-size: 1.1rem; font-weight: 700;">{{ book.title }}</h5>
+                            <p class="text-muted small mb-2" style="font-weight: 500;">Автор: {{ book.author }}</p>
+                            
+                            <div class="mb-3">
+                                {% for genre in book.genres %}
+                                    <span class="genre-badge">{{ genre.name }}</span>
+                                {% endfor %}
+                                <span class="badge bg-light text-dark border">{{ book.year }} г.</span>
+                            </div>
+
+                            <div class="d-flex gap-2 align-items-center mb-4 mt-auto">
+                                <span class="rating-badge" title="Средняя оценка">
+                                    <i class="fa-solid fa-star me-1 text-warning"></i>{{ book.average_rating }}
+                                </span>
+                                <span class="reviews-count-badge" title="Количество рецензий">
+                                    <i class="fa-solid fa-comment me-1"></i>{{ book.review_count }}
+                                </span>
+                                <span class="text-muted small ms-auto" style="font-weight: 500;"><i class="fa-solid fa-file-lines me-1"></i>{{ book.pages }} стр.</span>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2 border-top pt-3" style="border-top: 1px solid var(--border-color) !important;">
+                                <a href="{{ url_for('book_show', book_id=book.id) }}" class="btn btn-outline-light btn-sm flex-grow-1" title="Просмотр">
+                                    <i class="fa-solid fa-eye me-1"></i>Просмотр
+                                </a>
+                                {% if current_user.is_authenticated %}
+                                    {% if current_user.can_edit() %}
+                                        <a href="{{ url_for('book_edit', book_id=book.id) }}" class="btn btn-outline-warning btn-sm" title="Редактировать">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if current_user.can_delete() %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                data-bs-toggle="modal" data-bs-target="#deleteBookModal" 
+                                                data-book-id="{{ book.id }}" data-book-title="{{ book.title }}"
+                                                title="Удалить">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination (Jinja2 Pagination with persistent search query args) -->
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination pagination-custom justify-content-center">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('index', page=pagination.prev_num, **dict(request.args)) if pagination.has_prev else '#' }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                
+                {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('index', page=page_num, **dict(request.args)) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('index', page=pagination.next_num, **dict(request.args)) if pagination.has_next else '#' }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    {% else %}
+        <div class="glass-card p-5 text-center">
+            <i class="fa-solid fa-book-open fa-4x text-muted mb-4 opacity-50"></i>
+            <h4>Книги не найдены</h4>
+            <p class="text-muted">Попробуйте изменить параметры поиска или сбросить фильтры.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary-custom btn-sm mt-3">Сбросить поиск</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Single Delete Modal Container -->
+<div class="modal fade" id="deleteBookModal" tabindex="-1" aria-labelledby="deleteBookModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card text-dark" style="background: #ffffff;">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="deleteBookModalLabel"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Удаление книги</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите удалить книгу <strong id="delete-book-title-display" class="text-danger"></strong>?
+                <br>
+                <span class="text-muted small mt-2 d-block" style="font-weight: 500;">Все связанные отзывы и обложка будут также безвозвратно удалены.</span>
+            </div>
+            <div class="modal-footer border-top">
+                <form id="delete-book-form" method="POST" action="">
+                    <button type="submit" class="btn btn-danger btn-sm px-4">Да, удалить</button>
+                </form>
+                <button type="button" class="btn btn-secondary-custom btn-sm px-4" data-bs-dismiss="modal">Нет</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const deleteBookModal = document.getElementById('deleteBookModal');
+        deleteBookModal.addEventListener('show.bs.modal', function(event) {
+            // Button that triggered the modal
+            const button = event.relatedTarget;
+            // Extract info from data-bs-* attributes
+            const bookId = button.getAttribute('data-book-id');
+            const bookTitle = button.getAttribute('data-book-title');
+            
+            // Update the modal's content
+            const displayTitle = deleteBookModal.querySelector('#delete-book-title-display');
+            const deleteForm = deleteBookModal.querySelector('#delete-book-form');
+            
+            displayTitle.textContent = bookTitle;
+            deleteForm.setAttribute('action', `/books/${bookId}/delete`);
+        });
+
+        // Function to update dropdown button text dynamically when checkboxes are toggled
+        function initDropdownCheckboxText(dropdownBtnId, cbName, placeholderText) {
+            const btn = document.getElementById(dropdownBtnId);
+            if (!btn) return;
+            const labelSpan = btn.querySelector('span');
+            const checkboxes = document.querySelectorAll(`input[name="${cbName}"]`);
+            
+            function updateLabel() {
+                const selected = Array.from(checkboxes).filter(cb => cb.checked);
+                if (selected.length > 0) {
+                    labelSpan.textContent = `${placeholderText} (${selected.length})`;
+                } else {
+                    labelSpan.textContent = placeholderText;
+                }
+            }
+            
+            checkboxes.forEach(cb => cb.addEventListener('change', updateLabel));
+            updateLabel(); // Initial run to load existing selection on page load
+        }
+
+        initDropdownCheckboxText('genreDropdown', 'genre', 'Выбрать жанры');
+        initDropdownCheckboxText('yearDropdown', 'year', 'Выбрать года');
+    });
+</script>
+{% endblock %}

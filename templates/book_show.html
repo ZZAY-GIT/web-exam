@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} — Электронная библиотека{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Back button -->
+    <div class="col-12 mb-4">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary-custom btn-sm">
+            <i class="fa-solid fa-arrow-left me-2"></i>Назад к списку
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Book Details Card -->
+    <div class="col-md-4 mb-4">
+        <div class="glass-card p-4 text-center">
+            {% if book.cover %}
+                <img src="{{ url_for('static', filename='covers/' + book.cover.filename) }}" class="img-fluid rounded border mb-4" alt="{{ book.title }}" style="max-height: 400px; object-fit: cover; width: 100%;">
+            {% else %}
+                <div class="bg-light text-dark d-flex flex-column justify-content-center align-items-center rounded border mb-4" style="height: 350px; width: 100%;">
+                    <i class="fa-solid fa-book fa-4x mb-3"></i>
+                    <span>Нет обложки</span>
+                </div>
+            {% endif %}
+            
+            <h4 class="mb-1">{{ book.title }}</h4>
+            <p class="text-muted mb-3">{{ book.author }}</p>
+            
+            <hr class="mb-3" style="border-top: 1px solid var(--border-color);">
+            
+            <div class="text-start mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Год издания:</span>
+                    <span class="fw-bold">{{ book.year }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Издательство:</span>
+                    <span class="fw-bold">{{ book.publisher }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Объём:</span>
+                    <span class="fw-bold">{{ book.pages }} стр.</span>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                {% for genre in book.genres %}
+                    <span class="genre-badge">{{ genre.name }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <div class="text-center">
+                    <div class="rating-badge px-3 py-2">
+                        <i class="fa-solid fa-star me-1 text-warning"></i>{{ book.average_rating }}
+                    </div>
+                    <span class="text-muted small d-block mt-1">Оценка</span>
+                </div>
+                <div class="text-center">
+                    <div class="reviews-count-badge px-3 py-2">
+                        <i class="fa-solid fa-comment me-1"></i>{{ book.review_count }}
+                    </div>
+                    <span class="text-muted small d-block mt-1">Рецензий</span>
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+                <div class="d-grid gap-2 mt-4 border-top pt-4" style="border-top: 1px solid var(--border-color) !important;">
+                    {% if current_user.can_edit() %}
+                        <a href="{{ url_for('book_edit', book_id=book.id) }}" class="btn btn-outline-warning w-100">
+                            <i class="fa-solid fa-pen me-2"></i>Редактировать
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Description & Reviews -->
+    <div class="col-md-8">
+        <!-- Short Description Card -->
+        <div class="glass-card p-5 mb-4">
+            <h3 class="mb-4">Описание книги</h3>
+            <hr class="mb-4" style="border-top: 1px solid var(--border-color);">
+            <div class="markdown-content">
+                {{ book.description|markdown|safe }}
+            </div>
+        </div>
+
+        <!-- Reviews Card -->
+        <div class="glass-card p-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="m-0">Рецензии</h3>
+                
+                {% if current_user.is_authenticated %}
+                    {% if user_review %}
+                        <span class="badge bg-light text-dark border p-2"><i class="fa-solid fa-circle-check me-1 text-success"></i>Вы написали рецензию</span>
+                    {% else %}
+                        <a href="{{ url_for('review_add', book_id=book.id) }}" class="btn btn-primary-custom btn-sm">
+                            <i class="fa-solid fa-pen-nib me-1"></i>Написать рецензию
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <hr class="mb-4" style="border-top: 1px solid var(--border-color);">
+
+            <!-- Display current user's review at the top if exists -->
+            {% if user_review %}
+                <div class="card bg-light border mb-4" style="border-left: 4px solid var(--accent-primary) !important;">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="m-0"><i class="fa-solid fa-user-check me-1 text-primary"></i>Ваша рецензия</h6>
+                            <span class="text-muted small">{{ user_review.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                        </div>
+                        <div class="mb-3">
+                            {% for i in range(1, 6) %}
+                                <i class="fa-star {% if i <= user_review.rating %}fa-solid text-warning{% else %}fa-regular text-muted{% endif %}"></i>
+                            {% endfor %}
+                            <span class="ms-2 badge bg-light text-dark border small">{{ user_review.rating }}/5</span>
+                        </div>
+                        <div class="markdown-content small">
+                            {{ user_review.text|markdown|safe }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- All Reviews List -->
+            {% if reviews %}
+                <div class="reviews-list">
+                    {% for r in reviews %}
+                        <!-- Skip rendering current user's review again to avoid duplicates -->
+                        {% if not current_user.is_authenticated or r.id != user_review.id %}
+                            <div class="review-item">
+                                <div class="review-meta">
+                                    <span class="fw-bold">
+                                        <i class="fa-regular fa-user me-1 text-muted"></i>{{ r.user.full_name }}
+                                        <span class="badge bg-light text-dark border small ms-1">{{ r.user.role.name }}</span>
+                                    </span>
+                                    <span class="text-muted small">{{ r.created_at.strftime('%d.%m.%Y в %H:%M') }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    {% for i in range(1, 6) %}
+                                        <i class="fa-star {% if i <= r.rating %}fa-solid text-warning{% else %}fa-regular text-muted{% endif %}"></i>
+                                    {% endfor %}
+                                    <span class="ms-2 badge bg-light text-dark border small">{{ r.rating }}/5</span>
+                                </div>
+                                <div class="markdown-content">
+                                    {{ r.text|markdown|safe }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                {% if not user_review %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-regular fa-comment-dots fa-3x mb-3 opacity-50"></i>
+                        <p class="m-0">К этой книге пока нет рецензий. Будьте первым, кто оставит отзыв!</p>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

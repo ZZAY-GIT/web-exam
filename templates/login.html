@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход в систему — Электронная библиотека{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="glass-card p-5">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-lock fa-3x mb-3" style="color: var(--accent-primary);"></i>
+                <h2>Авторизация</h2>
+                <p class="text-muted small">Введите свои учетные данные для входа</p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                <div class="mb-4">
+                    <label for="login" class="form-label">Логин</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" class="form-control" id="login" name="login" required placeholder="Введите логин" value="{{ request.form.get('login', '') }}">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">Пароль</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary">
+                            <i class="fa-solid fa-key"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password" required placeholder="Введите пароль">
+                    </div>
+                </div>
+                
+                <div class="mb-4 form-check">
+                    <input type="checkbox" class="form-check-input border-secondary" id="remember" name="remember" checked>
+                    <label class="form-check-label text-muted" for="remember">Запомнить меня</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary-custom w-100 py-3 mt-2">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i>Войти
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from '_form.html' import render_book_form %}
+
+{% block title %}
+    {% if book %}Редактирование книги «{{ book.title }}»{% else %}Добавление книги{% endif %} — Электронная библиотека
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="glass-card p-5">
+            <h2 class="mb-4">
+                {% if book %}
+                    <i class="fa-solid fa-pen-to-square me-2" style="color: var(--accent-primary);"></i>Редактировать книгу
+                {% else %}
+                    <i class="fa-solid fa-plus me-2" style="color: var(--accent-secondary);"></i>Добавить книгу
+                {% endif %}
+            </h2>
+            <hr class="mb-4" style="border-top: 1px solid var(--border-color);">
+            
+            {% if book %}
+                {{ render_book_form(url_for('book_edit', book_id=book.id), genres, book, selected_genre_ids) }}
+            {% else %}
+                {{ render_book_form(url_for('book_add'), genres, None, selected_genre_ids) }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
