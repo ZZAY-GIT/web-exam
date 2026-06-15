@@ -52,9 +52,9 @@ def seed_db():
             {
                 'login': 'admin',
                 'password': 'admin',
-                'last_name': 'Иванов',
-                'first_name': 'Иван',
-                'middle_name': 'Иванович',
+                'last_name': 'Амплеенков',
+                'first_name': 'Даниил',
+                'middle_name': 'Олегович',
                 'role_name': 'Администратор'
             },
             {
