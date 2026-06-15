@@ -3,11 +3,9 @@ from models import db, Role, User, Genre
 
 def seed_db():
     with app.app_context():
-        # Create tables
         db.create_all()
         print("Database tables created.")
 
-        # Seed Roles
         roles_data = [
             {
                 'name': 'Администратор',
@@ -33,7 +31,6 @@ def seed_db():
                 print(f"Role '{role.name}' created.")
             roles[role.name] = role
 
-        # Seed Genres
         genres_data = [
             'Роман', 'Фантастика', 'Детектив', 'Наука', 'История', 
             'Поэзия', 'Приключения', 'Ужасы', 'Фэнтези', 'Биография'
@@ -47,7 +44,6 @@ def seed_db():
                 db.session.commit()
                 print(f"Genre '{name}' created.")
 
-        # Seed Users
         users_data = [
             {
                 'login': 'admin',

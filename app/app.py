@@ -15,7 +15,6 @@ from auth import auth_bp
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize Extensions
 db.init_app(app)
 migrate = Migrate(app, db)
 
@@ -29,10 +28,8 @@ login_manager.login_message_category = 'warning'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Register Blueprint
 app.register_blueprint(auth_bp)
 
-# Role Access Decorators
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -55,19 +52,15 @@ def editor_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Markdown Rendering Template Filter
 @app.template_filter('markdown')
 def render_markdown(text):
     if not text:
         return ""
-    # Safe rendering utilizing bleach clean before, so we can convert markdown safely
+    # Безопасный рендеринг: очистка тегов с помощью bleach перед конвертацией Markdown
     return markdown.markdown(text, extensions=['fenced_code', 'tables'])
-
-# Routes
 
 @app.route('/')
 def index():
-    # Extract query params for search (Variant 3)
     title = request.args.get('title', '').strip()
     author = request.args.get('author', '').strip()
     selected_genres = request.args.getlist('genre')
@@ -76,10 +69,7 @@ def index():
     pages_max = request.args.get('pages_max', '').strip()
     page = request.args.get('page', 1, type=int)
 
-    # Base query
     query = db.session.query(Book)
-
-    # Dynamic filters
     if title:
         query = query.filter(Book.title.ilike(f'%{title}%'))
     if author:
@@ -99,15 +89,12 @@ def index():
         except ValueError:
             pass
 
-    # Order by release date (newest first)
     query = query.order_by(Book.year.desc(), Book.id.desc())
 
-    # Pagination
     pagination = query.paginate(page=page, per_page=10, error_out=False)
 
-    # Context items for search inputs
     genres = Genre.query.order_by(Genre.name).all()
-    # "Варианты выбора в поле «год» должны формироваться исходя из содержимого БД."
+    # Варианты выбора в поле «год» формируются исходя из содержимого БД
     years_tuples = db.session.query(Book.year).distinct().order_by(Book.year.desc()).all()
     years = [y[0] for y in years_tuples]
 
@@ -137,13 +124,12 @@ def book_add():
         description = request.form.get('description', '').strip()
         cover_file = request.files.get('cover_file')
 
-        # Basic validations
         if not (title and author and year and publisher and pages and genres_list and description and cover_file):
             flash("Все поля формы обязательны для заполнения.", "danger")
             genres = Genre.query.all()
             return render_template('book_form.html', genres=genres, selected_genre_ids=[int(x) for x in genres_list])
 
-        # Cover md5 calculations
+        # Вычисление MD5-хэша обложки для дедупликации файлов
         try:
             file_data = cover_file.read()
             md5_hash = hashlib.md5(file_data).hexdigest()
@@ -151,7 +137,6 @@ def book_add():
             
             existing_cover = Cover.query.filter_by(md5_hash=md5_hash).first()
             
-            # Start database transaction
             clean_desc = bleach.clean(description)
             
             new_book = Book(
@@ -163,15 +148,14 @@ def book_add():
                 description=clean_desc
             )
             
-            # Link genres
             selected_genres = Genre.query.filter(Genre.id.in_([int(g) for g in genres_list])).all()
             new_book.genres = selected_genres
             
             db.session.add(new_book)
-            db.session.flush() # Get new_book.id
+            db.session.flush()
             
             if existing_cover:
-                # Reuse filename and mimetype
+                # Повторное использование имени файла обложки при совпадении хэша
                 new_cover = Cover(
                     filename=existing_cover.filename,
                     mime_type=existing_cover.mime_type,
@@ -190,19 +174,17 @@ def book_add():
                     book_id=new_book.id
                 )
                 db.session.add(new_cover)
-                db.session.flush() # Get new_cover.id
+                db.session.flush()
                 
-                # Save file name as cover_id + original extension
+                # Формирование имени файла: ID обложки + исходное расширение
                 ext = os.path.splitext(cover_file.filename)[1].lower()
                 if not ext:
                     ext = '.jpg'
                 final_filename = f"{new_cover.id}{ext}"
                 new_cover.filename = final_filename
                 
-                # Ensure directory exists
                 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
                 
-                # Save physical file to disk
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], final_filename)
                 with open(file_path, 'wb') as f:
                     f.write(file_data)
@@ -273,10 +255,10 @@ def book_delete(book_id):
     title = book.title
     
     try:
-        # Check covers and remove physical files if unique
+        # Удаление физических файлов обложек из файловой системы при удалении книги (если они уникальны)
         covers = Cover.query.filter_by(book_id=book.id).all()
         for cover in covers:
-            # Check if any other cover references this filename
+            # Проверка, не привязана ли данная обложка к другим книгам (дедупликация)
             siblings_count = Cover.query.filter(Cover.filename == cover.filename, Cover.id != cover.id).count()
             if siblings_count == 0:
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], cover.filename)
@@ -354,7 +336,6 @@ def review_add(book_id):
     return render_template('review_form.html', book=book)
 
 if __name__ == '__main__':
-    # Initialize database if running directly
     with app.app_context():
         db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5012)

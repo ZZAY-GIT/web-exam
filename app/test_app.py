@@ -9,7 +9,7 @@ from models import Book, Genre, Cover, User, Role, Review
 class TestElectronicLibrary(unittest.TestCase):
     def setUp(self):
         app.config['TESTING'] = True
-        # Use in-memory database for testing
+        # Использование БД в оперативной памяти (SQLite in-memory) для тестирования
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'test_covers')
         self.app_context = app.app_context()
@@ -17,12 +17,12 @@ class TestElectronicLibrary(unittest.TestCase):
         
         db.create_all()
         
-        # Clear existing data if connection is reused
+        # Очистка таблиц перед каждым запуском
         db.session.query(Genre).delete()
         db.session.query(Role).delete()
         db.session.commit()
         
-        # Seed test data
+        # Наполнение тестовыми данными
         self.role_admin = Role(name="Администратор", description="admin")
         self.role_user = Role(name="Пользователь", description="user")
         db.session.add(self.role_admin)
@@ -40,7 +40,7 @@ class TestElectronicLibrary(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
         
-        # Cleanup test upload folder if created
+        # Очистка тестовой папки с обложками после теста
         if os.path.exists(app.config['UPLOAD_FOLDER']):
             for f in os.listdir(app.config['UPLOAD_FOLDER']):
                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
@@ -85,7 +85,7 @@ class TestElectronicLibrary(unittest.TestCase):
         self.assertEqual(results[0].title, "Шерлок Холмс")
 
     def test_cover_deduplication(self):
-        # Mock file
+        # Имитация файла обложки
         file_bytes = b"fake image contents"
         md5_hash = hashlib.md5(file_bytes).hexdigest()
         
@@ -93,33 +93,33 @@ class TestElectronicLibrary(unittest.TestCase):
         db.session.add(b1)
         db.session.flush()
         
-        # First upload
+        # Первая загрузка
         c1 = Cover(filename="cover1.jpg", mime_type="image/jpeg", md5_hash=md5_hash, book_id=b1.id)
         db.session.add(c1)
         db.session.commit()
         
-        # Second book with same cover content
+        # Создание второй книги с аналогичным содержимым обложки
         b2 = Book(title="Book Two", author="Author B", year=2022, publisher="Pub B", pages=200, description="Desc B")
         db.session.add(b2)
         db.session.flush()
         
-        # Check if hash exists in db
+        # Поиск дубликата обложки по MD5-хэшу
         existing_cover = Cover.query.filter_by(md5_hash=md5_hash).first()
         self.assertIsNotNone(existing_cover)
         
-        # Reuse existing cover info
+        # Повторное использование имени файла
         c2 = Cover(filename=existing_cover.filename, mime_type=existing_cover.mime_type, md5_hash=md5_hash, book_id=b2.id)
         db.session.add(c2)
         db.session.commit()
         
-        # Verify both reference same cover filename
+        # Проверка ссылки на один файл
         self.assertEqual(c1.filename, c2.filename)
         
-        # Verify cascade deletion on Book delete
+        # Проверка каскадного удаления
         db.session.delete(b1)
         db.session.commit()
         
-        # Check that c1 is deleted but c2 is not (associated to b2)
+        # Убеждаемся, что первая обложка удалилась, а вторая сохранена
         c1_lookup = Cover.query.filter_by(id=c1.id).first()
         c2_lookup = Cover.query.filter_by(id=c2.id).first()
         self.assertIsNone(c1_lookup)
@@ -139,10 +139,10 @@ class TestElectronicLibrary(unittest.TestCase):
         db.session.add(r1)
         db.session.commit()
         
-        # Verify review exists
+        # Проверка создания рецензии
         self.assertEqual(Review.query.count(), 1)
         
-        # Delete review
+        # Удаление рецензии
         db.session.delete(r1)
         db.session.commit()
         self.assertEqual(Review.query.count(), 0)
@@ -162,7 +162,7 @@ class TestElectronicLibrary(unittest.TestCase):
         
         client = app.test_client()
         
-        # Try to delete without login (unauthorized redirects)
+        # Попытка удаления анонимным пользователем (редирект на вход)
         response = client.post(f'/reviews/{r.id}/delete')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Review.query.count(), 1)

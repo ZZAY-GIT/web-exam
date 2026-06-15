@@ -5,7 +5,6 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-# Association table for many-to-many relationship between books and genres
 book_genres = db.Table('book_genres',
     db.Column('book_id', db.Integer, db.ForeignKey('books.id', ondelete='CASCADE'), primary_key=True),
     db.Column('genre_id', db.Integer, db.ForeignKey('genres.id', ondelete='CASCADE'), primary_key=True)

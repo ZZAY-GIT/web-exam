@@ -11,10 +11,8 @@ def main():
 
     print("Waiting for database to be ready at host...")
     
-    # Try up to 30 times (30 seconds)
     for i in range(30):
         try:
-            # Connect using psycopg2
             conn = psycopg2.connect(db_url)
             conn.close()
             print("Database is ready and accepting connections!")

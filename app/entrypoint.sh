@@ -1,13 +1,11 @@
 #!/bin/sh
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-# Wait for PostgreSQL database to be online
+# Ожидание доступности СУБД
 python wait_for_db.py
 
-# Initialize database schema and insert default credentials/genres
+# Инициализация таблиц и заполнение начальных данных
 python seed.py
 
-# Launch the Flask application
+# Запуск веб-приложения
 python app.py

@@ -7,4 +7,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(BASE_DIR, "library.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'covers')
-    MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB limit
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024
