@@ -156,5 +156,5 @@ Thumbs.db
 *.sqlite3
 
 # Uploaded cover images (ignore all except placeholder / .gitkeep)
-static/covers/*
-!static/covers/.gitkeep
+app/static/covers/*
+!app/static/covers/.gitkeep

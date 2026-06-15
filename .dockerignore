@@ -16,5 +16,5 @@ test_app.py
 .pytest_cache/
 .idea/
 .vscode/
-static/covers/*
-!static/covers/.gitkeep
+app/static/covers/*
+!app/static/covers/.gitkeep
